@@ -115,7 +115,7 @@ impl SamplePipeline {
                     }),
                     viewport_state: Some(ViewportState::default()),
                     rasterization_state: Some(RasterizationState {
-                        cull_mode: CullMode::Back,
+                        cull_mode: CullMode::Front,
                         ..Default::default()
                     }),
                     multisample_state: Some(MultisampleState::default()),
@@ -155,7 +155,7 @@ impl SamplePipeline {
             let light_uniform = create_uniform_buffer_from_data(
                 app.memory_allocator(),
                 fs::Light {
-                    position: Padded([1.0, 1.0, 1.0]),
+                    position: Padded([3.0, 3.0, 3.0]),
                     ambient: Padded([1.0, 1.0, 1.0]),
                     diffuse: Padded([1.0, 1.0, 1.0]),
                     specular: [1.0, 1.0, 1.0],

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use easy_gltf::Scene;
 use pipeline::{
@@ -173,8 +173,14 @@ impl App {
             })
             .collect::<Vec<_>>();
 
-        let camera = {
-            let position = cgmath::point3(-5.0, 5.0, -5.0);
+        let render_start = Instant::now();
+        let camera_fn = || {
+            let elapsed = render_start.elapsed().as_secs_f32();
+            let position = cgmath::Point3::new(
+                (elapsed * 0.5).sin() * 5.0,
+                1.0,
+                (elapsed * 0.5).cos() * 5.0,
+            );
             Camera {
                 position,
                 view: cgmath::Matrix4::look_at_rh(
@@ -204,7 +210,7 @@ impl App {
                             builder,
                             vertex_buffer,
                             Some(index_buffer),
-                            &camera,
+                            &camera_fn(),
                         )
                     }
                 },
