@@ -1,12 +1,6 @@
 use std::{sync::Arc, time::Instant};
 
 use easy_gltf::Scene;
-use objc2::{
-    class,
-    ffi::{BOOL, YES},
-    msg_send,
-    runtime::AnyObject,
-};
 use pipeline::{
     draw,
     sample::{Camera, SamplePipeline},
@@ -140,14 +134,7 @@ impl App {
                 .window_handle()
                 .unwrap()
                 .as_raw();
-            if let RawWindowHandle::AppKit(window) = window_handle {
-                let ns_view = window.ns_view.cast::<AnyObject>();
-                let main_layer: *mut AnyObject = msg_send![ns_view, layer];
-                let class = class!(CAMetalLayer);
-                let is_valid_layer: BOOL = msg_send![main_layer, isKindOfClass: class];
-                assert!(is_valid_layer, "Layer is not a CAMetalLayer");
-                let () = msg_send![main_layer, setWantsExtendedDynamicRangeContent: YES];
-            }
+            enable_edr(window_handle);
         }
 
         let queue = self.context.graphics_queue().clone();
@@ -183,7 +170,11 @@ impl App {
                             | MemoryTypeFilter::HOST_SEQUENTIAL_WRITE,
                         ..Default::default()
                     },
-                    model.vertices().iter().map(|v| MyVertex::from(*v)),
+                    model.vertices().iter().map(|v| {
+                        let mut v = MyVertex::from(*v);
+                        v.position[1] *= -1.0;
+                        v
+                    }),
                 )
                 .unwrap();
                 let index_buffer = Buffer::from_iter(
@@ -281,6 +272,24 @@ impl App {
 
     pub(crate) fn memory_allocator(&self) -> Arc<StandardMemoryAllocator> {
         self.context.memory_allocator().clone()
+    }
+}
+
+#[cfg(target_os = "macos")]
+unsafe fn enable_edr(window_handle: RawWindowHandle) {
+    use objc2::{
+        class,
+        ffi::{BOOL, YES},
+        msg_send,
+        runtime::AnyObject,
+    };
+    if let RawWindowHandle::AppKit(window) = window_handle {
+        let ns_view = window.ns_view.cast::<AnyObject>();
+        let main_layer: *mut AnyObject = msg_send![ns_view, layer];
+        let class = class!(CAMetalLayer);
+        let is_valid_layer: BOOL = msg_send![main_layer, isKindOfClass: class];
+        assert!(is_valid_layer, "Layer is not a CAMetalLayer");
+        let () = msg_send![main_layer, setWantsExtendedDynamicRangeContent: YES];
     }
 }
 

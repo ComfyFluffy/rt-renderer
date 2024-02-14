@@ -13,7 +13,7 @@ use vulkano::{
             color_blend::{ColorBlendAttachmentState, ColorBlendState},
             input_assembly::{InputAssemblyState, PrimitiveTopology},
             multisample::MultisampleState,
-            rasterization::{CullMode, FrontFace, RasterizationState},
+            rasterization::{CullMode, RasterizationState},
             subpass::PipelineRenderingCreateInfo,
             vertex_input::{Vertex, VertexDefinition},
             viewport::ViewportState,
@@ -115,7 +115,6 @@ impl SamplePipeline {
                     }),
                     viewport_state: Some(ViewportState::default()),
                     rasterization_state: Some(RasterizationState {
-                        front_face: FrontFace::Clockwise,
                         cull_mode: CullMode::Back,
                         ..Default::default()
                     }),
