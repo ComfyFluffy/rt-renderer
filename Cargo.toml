@@ -1,0 +1,25 @@
+[package]
+name = "rt-renderer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+winit = "0.29.7"
+log = "0.4"
+vulkano = { path = "../vulkano/vulkano" }
+vulkano-shaders = { path = "../vulkano/vulkano-shaders" }
+vulkano-util = { path = "../vulkano/vulkano-util" }
+easy-gltf = "1.1.1"
+cgmath = "0.18.0"
+
+# [dependencies.gltf]
+# version = "1.4"
+# features = ["KHR_materials_emissive_strength", "KHR_lights_punctual"]
+
+[profile.release]
+debug = true
+
+[profile.dev]
+opt-level = 1

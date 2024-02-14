@@ -1,0 +1,4 @@
+/target
+/*.glb
+
+.DS_Store
