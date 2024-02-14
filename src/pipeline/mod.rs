@@ -6,6 +6,7 @@ use vulkano::{
         CommandBufferUsage, RecordingCommandBuffer, RenderingAttachmentInfo, RenderingInfo,
     },
     device::Queue,
+    format::ClearValue,
     image::view::ImageView,
     pipeline::graphics::viewport::Viewport,
     render_pass::{AttachmentLoadOp, AttachmentStoreOp},
@@ -19,6 +20,7 @@ pub fn draw(
     command_buffer_allocator: Arc<StandardCommandBufferAllocator>,
     queue: Arc<Queue>,
     dst_image: Arc<ImageView>,
+    depth_image: Arc<ImageView>,
     record_fn: impl FnOnce(&mut RecordingCommandBuffer),
 ) -> Box<dyn GpuFuture> {
     let mut builder = RecordingCommandBuffer::new(
@@ -48,6 +50,12 @@ pub fn draw(
                 clear_value: Some([0.0, 0.0, 0.0, 1.0].into()),
                 ..RenderingAttachmentInfo::image_view(dst_image)
             })],
+            depth_attachment: Some(RenderingAttachmentInfo {
+                load_op: AttachmentLoadOp::Clear,
+                store_op: AttachmentStoreOp::DontCare,
+                clear_value: Some(ClearValue::Depth(1.0)),
+                ..RenderingAttachmentInfo::image_view(depth_image)
+            }),
             ..Default::default()
         })
         .unwrap()

@@ -11,6 +11,7 @@ use vulkano::{
     descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{DeviceExtensions, Features},
     format::Format,
+    image::{view::ImageView, Image, ImageCreateInfo, ImageType, ImageUsage},
     memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator},
     pipeline::graphics::{subpass::PipelineRenderingCreateInfo, vertex_input::Vertex},
     swapchain::ColorSpace,
@@ -117,6 +118,7 @@ impl App {
                 width: 1280.0,
                 height: 720.0,
                 title: "r/place 2023 Player".to_string(),
+                resizable: false,
                 ..Default::default()
             },
             |create_info| {
@@ -149,6 +151,7 @@ impl App {
                         .unwrap()
                         .swapchain_format(),
                 )],
+                depth_attachment_format: Some(Format::D32_SFLOAT),
                 ..Default::default()
             },
         );
@@ -218,6 +221,27 @@ impl App {
             }
         };
 
+        let depth_image = {
+            let renderer = self.windows.get_renderer_mut(window_id).unwrap();
+            let extent = renderer.swapchain_image_view().image().extent();
+            println!("extent: {:?}", extent);
+            ImageView::new_default(
+                Image::new(
+                    self.memory_allocator(),
+                    ImageCreateInfo {
+                        image_type: ImageType::Dim2d,
+                        extent: [extent[0], extent[1], 1],
+                        format: Format::D32_SFLOAT,
+                        usage: ImageUsage::DEPTH_STENCIL_ATTACHMENT,
+                        ..Default::default()
+                    },
+                    AllocationCreateInfo::default(),
+                )
+                .unwrap(),
+            )
+            .unwrap()
+        };
+
         let command_buffer_allocator = self.command_buffer_allocator.clone();
         let redraw = |renderer: &mut VulkanoWindowRenderer| {
             let before = renderer.acquire().unwrap();
@@ -227,6 +251,7 @@ impl App {
                 command_buffer_allocator.clone(),
                 queue.clone(),
                 renderer.swapchain_image_view(),
+                depth_image.clone(),
                 |builder| {
                     for model in &models {
                         let vertex_buffer = model.vertex_buffer.clone();
