@@ -10,6 +10,7 @@ use vulkano::{
     command_buffer::allocator::StandardCommandBufferAllocator,
     descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{DeviceExtensions, Features},
+    format::Format,
     memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator},
     pipeline::graphics::{subpass::PipelineRenderingCreateInfo, vertex_input::Vertex},
 };
@@ -112,7 +113,9 @@ impl App {
                 title: "r/place 2023 Player".to_string(),
                 ..Default::default()
             },
-            |_| {},
+            |create_info| {
+                create_info.image_format = Format::R16G16B16A16_SFLOAT;
+            },
         );
 
         let queue = self.context.graphics_queue().clone();
