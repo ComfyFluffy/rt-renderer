@@ -1,6 +1,12 @@
 use std::{sync::Arc, time::Instant};
 
 use easy_gltf::Scene;
+use objc2::{
+    class,
+    ffi::{BOOL, YES},
+    msg_send,
+    runtime::AnyObject,
+};
 use pipeline::{
     draw,
     sample::{Camera, SamplePipeline},
@@ -13,6 +19,7 @@ use vulkano::{
     format::Format,
     memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator},
     pipeline::graphics::{subpass::PipelineRenderingCreateInfo, vertex_input::Vertex},
+    swapchain::ColorSpace,
 };
 use vulkano_util::{
     context::{VulkanoConfig, VulkanoContext},
@@ -22,6 +29,7 @@ use vulkano_util::{
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
+    raw_window_handle::{HasWindowHandle, RawWindowHandle},
 };
 
 mod gltf;
@@ -62,7 +70,7 @@ impl From<easy_gltf::model::Vertex> for MyVertex {
 
 impl App {
     pub fn new() -> Self {
-        let config = VulkanoConfig {
+        let mut config = VulkanoConfig {
             device_extensions: DeviceExtensions {
                 khr_swapchain: true,
                 khr_dynamic_rendering: true,
@@ -77,6 +85,10 @@ impl App {
             },
             ..Default::default()
         };
+        config
+            .instance_create_info
+            .enabled_extensions
+            .ext_swapchain_colorspace = true;
 
         let context = VulkanoContext::new(config);
         let windows = VulkanoWindows::default();
@@ -115,8 +127,28 @@ impl App {
             },
             |create_info| {
                 create_info.image_format = Format::R16G16B16A16_SFLOAT;
+                create_info.image_color_space = ColorSpace::ExtendedSrgbLinear;
             },
         );
+
+        #[cfg(target_os = "macos")]
+        unsafe {
+            let window_handle = self
+                .windows
+                .get_window(window_id)
+                .unwrap()
+                .window_handle()
+                .unwrap()
+                .as_raw();
+            if let RawWindowHandle::AppKit(window) = window_handle {
+                let ns_view = window.ns_view.cast::<AnyObject>();
+                let main_layer: *mut AnyObject = msg_send![ns_view, layer];
+                let class = class!(CAMetalLayer);
+                let is_valid_layer: BOOL = msg_send![main_layer, isKindOfClass: class];
+                assert!(is_valid_layer, "Layer is not a CAMetalLayer");
+                let () = msg_send![main_layer, setWantsExtendedDynamicRangeContent: YES];
+            }
+        }
 
         let queue = self.context.graphics_queue().clone();
 

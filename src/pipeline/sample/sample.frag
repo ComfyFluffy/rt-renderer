@@ -11,6 +11,7 @@ layout(set = 1, binding = 0) uniform Material {
   float shininess;
 }
 material;
+
 layout(set = 1, binding = 1) uniform Light {
   vec3 position;
   vec3 ambient;
