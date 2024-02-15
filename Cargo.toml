@@ -13,6 +13,8 @@ vulkano-shaders = { path = "../vulkano/vulkano-shaders" }
 vulkano-util = { path = "../vulkano/vulkano-util" }
 easy-gltf = "1.1.1"
 cgmath = "0.18.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.5"
 
 # [dependencies.gltf]
