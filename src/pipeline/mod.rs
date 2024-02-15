@@ -3,7 +3,8 @@ use std::sync::Arc;
 use vulkano::{
     command_buffer::{
         allocator::StandardCommandBufferAllocator, CommandBufferBeginInfo, CommandBufferLevel,
-        CommandBufferUsage, RecordingCommandBuffer, RenderingAttachmentInfo, RenderingInfo,
+        CommandBufferUsage, RecordingCommandBuffer, RenderingAttachmentInfo,
+        RenderingAttachmentResolveInfo, RenderingInfo,
     },
     device::Queue,
     format::ClearValue,
@@ -19,6 +20,7 @@ pub fn draw(
     before: Box<dyn GpuFuture>,
     command_buffer_allocator: Arc<StandardCommandBufferAllocator>,
     queue: Arc<Queue>,
+    msaa_color_image: Arc<ImageView>,
     dst_image: Arc<ImageView>,
     depth_image: Arc<ImageView>,
     record_fn: impl FnOnce(&mut RecordingCommandBuffer),
@@ -35,7 +37,7 @@ pub fn draw(
     .unwrap();
 
     let viewport: Viewport = {
-        let extent = dst_image.image().extent();
+        let extent = msaa_color_image.image().extent();
         Viewport {
             extent: [extent[0] as f32, extent[1] as f32],
             ..Default::default()
@@ -48,7 +50,8 @@ pub fn draw(
                 load_op: AttachmentLoadOp::Clear,
                 store_op: AttachmentStoreOp::Store,
                 clear_value: Some([0.0, 0.0, 0.0, 1.0].into()),
-                ..RenderingAttachmentInfo::image_view(dst_image)
+                resolve_info: Some(RenderingAttachmentResolveInfo::image_view(dst_image)),
+                ..RenderingAttachmentInfo::image_view(msaa_color_image)
             })],
             depth_attachment: Some(RenderingAttachmentInfo {
                 load_op: AttachmentLoadOp::Clear,
@@ -56,6 +59,7 @@ pub fn draw(
                 clear_value: Some(ClearValue::Depth(1.0)),
                 ..RenderingAttachmentInfo::image_view(depth_image)
             }),
+
             ..Default::default()
         })
         .unwrap()

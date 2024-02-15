@@ -11,7 +11,7 @@ use vulkano::{
     descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{DeviceExtensions, Features},
     format::Format,
-    image::{view::ImageView, Image, ImageCreateInfo, ImageType, ImageUsage},
+    image::{view::ImageView, Image, ImageCreateInfo, ImageType, ImageUsage, SampleCount},
     memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator},
     pipeline::graphics::{subpass::PipelineRenderingCreateInfo, vertex_input::Vertex},
     swapchain::ColorSpace,
@@ -76,6 +76,7 @@ impl App {
             },
             device_features: Features {
                 dynamic_rendering: true,
+                fill_mode_non_solid: true,
                 ..Features::empty()
             },
             ..Default::default()
@@ -206,9 +207,9 @@ impl App {
         let camera_fn = || {
             let elapsed = render_start.elapsed().as_secs_f32();
             let position = cgmath::Point3::new(
-                (elapsed * 0.5).sin() * 5.0,
+                (elapsed * 0.5).sin() * 3.0,
                 1.0,
-                (elapsed * 0.5).cos() * 5.0,
+                (elapsed * 0.5).cos() * 3.0,
             );
             Camera {
                 position,
@@ -221,26 +222,49 @@ impl App {
             }
         };
 
-        let depth_image = {
-            let renderer = self.windows.get_renderer_mut(window_id).unwrap();
-            let extent = renderer.swapchain_image_view().image().extent();
-            println!("extent: {:?}", extent);
-            ImageView::new_default(
-                Image::new(
-                    self.memory_allocator(),
-                    ImageCreateInfo {
-                        image_type: ImageType::Dim2d,
-                        extent: [extent[0], extent[1], 1],
-                        format: Format::D32_SFLOAT,
-                        usage: ImageUsage::DEPTH_STENCIL_ATTACHMENT,
-                        ..Default::default()
-                    },
-                    AllocationCreateInfo::default(),
-                )
-                .unwrap(),
-            )
+        let extent = self
+            .windows
+            .get_renderer_mut(window_id)
             .unwrap()
-        };
+            .swapchain_image_view()
+            .image()
+            .extent();
+
+        let samples = SampleCount::Sample4;
+
+        let depth_image = ImageView::new_default(
+            Image::new(
+                self.memory_allocator(),
+                ImageCreateInfo {
+                    image_type: ImageType::Dim2d,
+                    extent: [extent[0], extent[1], 1],
+                    format: Format::D32_SFLOAT,
+                    usage: ImageUsage::DEPTH_STENCIL_ATTACHMENT,
+                    samples,
+                    ..Default::default()
+                },
+                AllocationCreateInfo::default(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+
+        let msaa_color_image = ImageView::new_default(
+            Image::new(
+                self.memory_allocator(),
+                ImageCreateInfo {
+                    image_type: ImageType::Dim2d,
+                    extent: [extent[0], extent[1], 1],
+                    format: Format::R16G16B16A16_SFLOAT,
+                    usage: ImageUsage::COLOR_ATTACHMENT | ImageUsage::TRANSIENT_ATTACHMENT,
+                    samples,
+                    ..Default::default()
+                },
+                AllocationCreateInfo::default(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
 
         let command_buffer_allocator = self.command_buffer_allocator.clone();
         let redraw = |renderer: &mut VulkanoWindowRenderer| {
@@ -250,6 +274,7 @@ impl App {
                 before,
                 command_buffer_allocator.clone(),
                 queue.clone(),
+                msaa_color_image.clone(),
                 renderer.swapchain_image_view(),
                 depth_image.clone(),
                 |builder| {

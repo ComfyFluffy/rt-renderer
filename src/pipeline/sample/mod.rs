@@ -14,7 +14,7 @@ use vulkano::{
             depth_stencil::{CompareOp, DepthState, DepthStencilState},
             input_assembly::{InputAssemblyState, PrimitiveTopology},
             multisample::MultisampleState,
-            rasterization::{CullMode, RasterizationState},
+            rasterization::{CullMode, PolygonMode, RasterizationState},
             subpass::PipelineRenderingCreateInfo,
             vertex_input::{Vertex, VertexDefinition},
             viewport::ViewportState,
@@ -116,6 +116,8 @@ impl SamplePipeline {
                     }),
                     viewport_state: Some(ViewportState::default()),
                     rasterization_state: Some(RasterizationState {
+                        polygon_mode: PolygonMode::Line,
+                        line_width: 1.0,
                         cull_mode: CullMode::Back,
                         ..Default::default()
                     }),
